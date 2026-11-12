@@ -1,0 +1,30 @@
+.git
+.env
+.DS_Store
+airflow_settings.yaml
+__pycache__/
+astro
+.venv
+.astro/standalone/
+.astro/worktrees/
+airflow-webserver.pid
+webserver_config.py
+airflow.cfg
+airflow.db
+.astro/*.local.yml
+.astro/*.local.yaml
+
+**/.astro/dbt_metadata.json
+**/.astro/*manifest*.slim.json
+
+# ---- added for this project ----
+# any real env file (keep only the template)
+.env.*
+!.env.example
+.astro/config.yaml.lock
+# assignment brief and report drafts (submitted separately)
+*.docx
+~$*
+# editor / OS files
+.vscode/
+Thumbs.db

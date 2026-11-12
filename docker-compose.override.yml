@@ -1,0 +1,73 @@
+# docker-compose.override.yml
+# Astro CLI automatically merges this file with its own Airflow compose setup.
+# Adds MongoDB (primary database) and Mongo Express (web admin UI).
+
+services:
+
+  # ---------------- MongoDB: primary database for the ETL output ----------------
+  mongodb:
+    image: mongo:7.0
+    container_name: currency_mongodb
+    restart: unless-stopped
+    env_file:
+      - .env                       # reads MONGO_INITDB_ROOT_USERNAME / PASSWORD / DATABASE
+    command: ["--wiredTigerCacheSizeGB", "0.25"]   # keep RAM usage low on this laptop
+    ports:
+      - "127.0.0.1:27017:27017"    # optional: lets tools on Windows reach MongoDB
+    volumes:
+      - mongo_data:/data/db         # persistent storage for the database files
+      - mongo_config:/data/configdb # persistent storage for MongoDB config
+    networks:
+      - airflow                     # Astro's network -> Airflow tasks can reach "mongodb"
+      - mongo_net                   # private network shared with Mongo Express
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      mlops.project: "currency-exchange-etl"
+      mlops.service.role: "primary-database"
+      mlops.service.description: "MongoDB storing transformed Frankfurter exchange rates"
+
+  # ---------------- Mongo Express: web UI for MongoDB ----------------
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: currency_mongo_express
+    restart: unless-stopped
+    env_file:
+      - .env                       # reads ME_CONFIG_* variables
+    ports:
+      - "127.0.0.1:8081:8081"      # open http://localhost:8081 in the browser
+    networks:
+      - mongo_net                   # only needs to talk to MongoDB
+    depends_on:
+      mongodb:
+        condition: service_healthy  # wait until MongoDB answers "ping"
+    labels:
+      mlops.project: "currency-exchange-etl"
+      mlops.service.role: "database-admin-ui"
+      mlops.service.description: "Mongo Express web interface for browsing MongoDB"
+
+# ---------------- Named volumes (persistent storage) ----------------
+volumes:
+  mongo_data:
+    name: currency_etl_mongo_data
+    labels:
+      mlops.project: "currency-exchange-etl"
+      mlops.volume.purpose: "MongoDB database files"
+  mongo_config:
+    name: currency_etl_mongo_config
+    labels:
+      mlops.project: "currency-exchange-etl"
+      mlops.volume.purpose: "MongoDB configuration files"
+
+# ---------------- Networks ----------------
+networks:
+  mongo_net:
+    name: currency_etl_mongo_net
+    driver: bridge
+    labels:
+      mlops.project: "currency-exchange-etl"
+      mlops.network.purpose: "Private link between MongoDB and Mongo Express"
