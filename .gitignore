@@ -22,8 +22,9 @@ airflow.db
 .env.*
 !.env.example
 .astro/config.yaml.lock
-# assignment brief and report drafts (submitted separately)
+# assignment brief and report (submitted separately)
 *.docx
+report/
 ~$*
 # editor / OS files
 .vscode/
